@@ -1,5 +1,7 @@
 # Orbit & Collision Lab
 
+Course exercise by **Zichen Yang**, HKU student, for **STEM Education**.
+
 A self-contained STEM physics interaction page built with vanilla HTML, CSS, and JavaScript Canvas.
 
 - Orbital gravity: explore the relationship between central mass and orbital speed
