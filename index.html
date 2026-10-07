@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="data:," />
+  <meta name="description" content="An interactive STEM physics lab built with HTML, CSS, and JavaScript." />
+  <title>Orbit & Collision Lab · STEM Lab</title>
+  <style>
+    :root {
+      --ink: #eff7ff;
+      --muted: #96a9bd;
+      --line: rgba(164, 201, 231, .16);
+      --panel: rgba(17, 30, 48, .86);
+      --panel-soft: rgba(24, 41, 63, .7);
+      --cyan: #65e4ff;
+      --lime: #c8f36a;
+      --orange: #ffb86c;
+      --violet: #b7a0ff;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #07111e;
+      background-image: radial-gradient(circle at 5% 0%, #1c3d52 0, transparent 34%), radial-gradient(circle at 100% 10%, #2a2552 0, transparent 28%);
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .app { width: min(1420px, calc(100% - 36px)); margin: 0 auto; padding: 28px 0 34px; }
+    header { display: flex; justify-content: space-between; align-items: flex-end; gap: 22px; margin-bottom: 24px; }
+    .eyebrow { display: flex; align-items: center; gap: 10px; color: var(--cyan); font: 700 11px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .16em; text-transform: uppercase; }
+    .eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 14px var(--lime); }
+    h1 { margin: 10px 0 7px; font-size: clamp(28px, 4vw, 50px); letter-spacing: -.055em; line-height: 1; }
+    .subtitle { max-width: 680px; margin: 0; color: var(--muted); font-size: 15px; line-height: 1.6; }
+    .header-chip { display: flex; align-items: center; gap: 9px; align-self: center; padding: 11px 14px; color: #cbd9e6; border: 1px solid var(--line); border-radius: 99px; background: rgba(7, 17, 30, .35); font: 600 12px ui-monospace, monospace; white-space: nowrap; }
+    .header-chip svg { color: var(--lime); }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, .75fr); gap: 16px; }
+    .card { border: 1px solid var(--line); border-radius: 20px; background: var(--panel); box-shadow: 0 18px 80px rgba(0, 0, 0, .2); backdrop-filter: blur(18px); }
+    .stage-card { min-width: 0; overflow: hidden; }
+    .stage-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 17px; border-bottom: 1px solid var(--line); }
+    .stage-top strong { font-size: 13px; letter-spacing: .01em; }
+    .stage-top span { color: var(--muted); font: 11px ui-monospace, monospace; }
+    .stage-wrap { position: relative; min-height: 600px; background: #081522; }
+    canvas { display: block; width: 100%; height: 600px; touch-action: none; }
+    .stage-hint { position: absolute; left: 18px; bottom: 16px; max-width: 320px; padding: 9px 12px; color: #b9cbd8; border: 1px solid rgba(137, 206, 233, .18); border-radius: 10px; background: rgba(7, 17, 30, .66); font-size: 12px; line-height: 1.4; pointer-events: none; }
+    .sim-state { position: absolute; top: 16px; left: 17px; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 8px; background: rgba(4, 12, 21, .58); color: #b8cada; font: 10px ui-monospace, monospace; letter-spacing: .09em; }
+    .sim-state b { width: 6px; height: 6px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 12px var(--lime); }
+    .side { display: flex; flex-direction: column; gap: 16px; }
+    .controls { padding: 19px; }
+    .panel-title { display: flex; align-items: start; justify-content: space-between; gap: 10px; margin-bottom: 16px; }
+    .panel-title h2 { margin: 0; font-size: 16px; letter-spacing: -.02em; }
+    .panel-title p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+    .reset { border: 0; color: var(--cyan); background: none; font-size: 12px; padding: 2px 0; }
+    .preset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 18px; }
+    .preset { min-height: 78px; padding: 10px; text-align: left; color: #c6d5e4; border: 1px solid var(--line); border-radius: 12px; background: var(--panel-soft); transition: .18s ease; }
+    .preset:hover, .preset.active { border-color: rgba(101, 228, 255, .65); background: rgba(46, 94, 116, .38); transform: translateY(-1px); }
+    .preset.active { box-shadow: 0 0 0 1px rgba(101, 228, 255, .17) inset; }
+    .preset .icon { display: block; margin-bottom: 9px; color: var(--cyan); font-size: 16px; }
+    .preset strong { display: block; margin-bottom: 3px; font-size: 12px; }
+    .preset small { display: block; color: var(--muted); font-size: 10px; }
+    .control { padding: 13px 0; border-top: 1px solid var(--line); }
+    .control:first-of-type { border-top: 0; }
+    .control-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; color: #c8d7e5; font-size: 12px; }
+    .control-label output { color: var(--cyan); font: 700 12px ui-monospace, monospace; }
+    input[type="range"] { width: 100%; accent-color: var(--cyan); }
+    .toggle-row { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; }
+    .toggle-row span { color: #c8d7e5; font-size: 12px; }
+    .switch { position: relative; width: 40px; height: 22px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; inset: 0; border-radius: 20px; background: #304354; transition: .2s; }
+    .slider:before { content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; border-radius: 50%; background: #c0cfda; transition: .2s; }
+    .switch input:checked + .slider { background: #3e7886; }
+    .switch input:checked + .slider:before { background: var(--lime); transform: translateX(18px); }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 14px; }
+    .stat { padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(19, 36, 54, .67); }
+    .stat small { display: block; margin-bottom: 7px; color: var(--muted); font-size: 10px; }
+    .stat strong { font: 700 20px ui-monospace, monospace; letter-spacing: -.06em; }
+    .stat em { color: var(--muted); font: normal 10px ui-monospace, monospace; }
+    .lesson { padding: 18px 19px; border-color: rgba(200, 243, 106, .25); background: linear-gradient(135deg, rgba(48, 77, 51, .53), rgba(20, 46, 62, .64)); }
+    .lesson .tag { color: var(--lime); font: 700 10px ui-monospace, monospace; letter-spacing: .13em; }
+    .lesson h3 { margin: 9px 0 7px; font-size: 15px; }
+    .lesson p { margin: 0; color: #c3d2c5; font-size: 12px; line-height: 1.6; }
+    .lesson code { color: var(--lime); font-family: ui-monospace, monospace; }
+    footer { display: flex; justify-content: space-between; gap: 16px; margin-top: 18px; color: #71879b; font-size: 11px; line-height: 1.5; }
+    footer a { color: #98b6c9; }
+    @media (max-width: 980px) { .workspace { grid-template-columns: 1fr; } .stage-wrap, canvas { height: min(66vw, 600px); min-height: 400px; } }
+    @media (max-width: 620px) { .app { width: min(100% - 22px, 1420px); padding-top: 18px; } header { align-items: flex-start; flex-direction: column; } .header-chip { align-self: flex-start; } .preset-grid { grid-template-columns: 1fr; } .preset { min-height: 0; display: grid; grid-template-columns: 26px 1fr; column-gap: 8px; align-items: center; } .preset .icon { grid-row: span 2; margin: 0; } .stage-wrap, canvas { height: 72vw; min-height: 350px; } footer { flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div>
+        <div class="eyebrow"><span class="dot"></span> STEM / PHYSICS LAB 01</div>
+        <h1>Orbit & Collision Lab</h1>
+        <p class="subtitle">Turn mechanics into a hands-on experiment. Switch presets and adjust the variables to see how gravity, velocity, and momentum shape motion.</p>
+      </div>
+      <div class="header-chip"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4"/></svg>Vanilla HTML · Canvas · JavaScript</div>
+    </header>
+
+    <section class="workspace">
+      <div class="card stage-card">
+        <div class="stage-top"><strong id="experimentName">Orbital gravity</strong><span id="experimentCode">EXPERIMENT / 01</span></div>
+        <div class="stage-wrap">
+          <canvas id="simCanvas" aria-label="Physics simulation canvas"></canvas>
+          <div class="sim-state"><b></b> SIMULATION RUNNING</div>
+          <div class="stage-hint">Press and drag on the canvas to launch a new ball. Drag direction sets its initial velocity.</div>
+        </div>
+      </div>
+
+      <aside class="side">
+        <section class="card controls">
+          <div class="panel-title"><div><h2>Experiment settings</h2><p>Choose a starting point, then tune the variables.</p></div><button class="reset" id="resetBtn">↺ Reset</button></div>
+          <div class="preset-grid">
+            <button class="preset active" data-preset="orbit"><span class="icon">◌</span><span><strong>Orbital gravity</strong><small>Central mass & orbit</small></span></button>
+            <button class="preset" data-preset="bounce"><span class="icon">◈</span><span><strong>Elastic collisions</strong><small>Momentum exchange</small></span></button>
+            <button class="preset" data-preset="throw"><span class="icon">↗</span><span><strong>Free throw</strong><small>Gravity & parabolas</small></span></button>
+          </div>
+          <div class="control"><div class="control-label"><span>Gravity strength</span><output id="gravityValue">1.0×</output></div><input id="gravityRange" type="range" min="0" max="2" value="1" step="0.1" /></div>
+          <div class="control"><div class="control-label"><span>Elasticity</span><output id="bounceValue">0.86</output></div><input id="bounceRange" type="range" min="0.2" max="1" value="0.86" step="0.01" /></div>
+          <div class="control"><div class="control-label"><span>Time scale</span><output id="timeValue">1.0×</output></div><input id="timeRange" type="range" min="0.25" max="2" value="1" step="0.25" /></div>
+          <div class="toggle-row"><span>Show motion trails</span><label class="switch"><input id="trailToggle" type="checkbox" checked /><span class="slider"></span></label></div>
+        </section>
+
+        <section class="card stats">
+          <div class="stat"><small>Active bodies</small><strong id="bodyCount">0</strong><em> bodies</em></div>
+          <div class="stat"><small>System energy</small><strong id="energyValue">0</strong><em> kJ</em></div>
+          <div class="stat"><small>Frame rate</small><strong id="fpsValue">60</strong><em> fps</em></div>
+        </section>
+
+        <section class="card lesson">
+          <div class="tag">FIELD NOTE / 01</div>
+          <h3 id="lessonTitle">Why does the ball stay in orbit?</h3>
+          <p id="lessonText">When orbital speed is high enough, the ball is pulled inward while moving along its tangent. It keeps “falling” without hitting the center. Set gravity to <code>0</code> and see what changes.</p>
+        </section>
+      </aside>
+    </section>
+
+    <footer><span>Inspired by:<a href="https://github.com/MartinHeinz/physics-visual" target="_blank" rel="noreferrer">MartinHeinz/physics-visual</a>(MIT License). This page is an independent rewrite for teaching.</span><span>Drag · Observe · Hypothesize</span></footer>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const $ = id => document.getElementById(id);
+    let W = 900, H = 600, dpr = 1, bodies = [], preset = 'orbit', last = performance.now(), fps = 60, spawn = null;
+    const params = { gravity: 1, bounce: .86, time: 1, trails: true };
+    const palette = ['#65e4ff', '#c8f36a', '#ffb86c', '#b7a0ff', '#f391b6'];
+
+    function resize() { const rect = canvas.getBoundingClientRect(); dpr = Math.min(devicePixelRatio || 1, 2); W = Math.max(320, rect.width); H = Math.max(300, rect.height); canvas.width = W * dpr; canvas.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+    window.addEventListener('resize', resize); resize();
+    function body(x, y, r, m, color, vx=0, vy=0, fixed=false) { return { x, y, r, m, color, vx, vy, fixed, trail: [] }; }
+    function center() { return { x: W * .52, y: H * .5 }; }
+    function loadPreset(name) {
+      preset = name; const c = center(); bodies = [];
+      if (name === 'orbit') {
+        bodies.push(body(c.x, c.y, 38, 11000, '#ffcf73', 0, 0, true));
+        [[150,0,0,230],[0,205,-190,0],[-245,0,0,-180]].forEach(([dx,dy,vx,vy],i) => bodies.push(body(c.x+dx,c.y+dy, 9+i*2, 18+i*5, palette[i], vx, vy)));
+        $('experimentName').textContent = 'Orbital gravity'; $('experimentCode').textContent = 'EXPERIMENT / 01'; $('lessonTitle').textContent = 'Why does the ball stay in orbit?'; $('lessonText').innerHTML = 'When orbital speed is high enough, the ball is pulled inward while moving along its tangent. It keeps “falling” without hitting the center. Set gravity to <code>0</code> and see what changes.';
+      } else if (name === 'bounce') {
+        for (let i=0;i<10;i++) { const r = 13 + (i%4)*4; bodies.push(body(90+r+(i*71)%Math.max(180,W-180), 90+(i*47)%(Math.max(180,H-180)), r, r*r, palette[i%palette.length], (i%2?1:-1)*(45+i*8), (i%3-1)*50)); }
+        $('experimentName').textContent = 'Elastic collisions'; $('experimentCode').textContent = 'EXPERIMENT / 02'; $('lessonTitle').textContent = 'What stays constant in a collision?'; $('lessonText').innerHTML = 'When two balls collide, velocity is redistributed. The closer elasticity is to <code>1</code>, the more kinetic energy remains after impact. Lower it and watch the system settle.';
+      } else {
+        bodies.push(body(120, H*.72, 16, 260, '#ffb86c', 260, -380)); bodies.push(body(280, H*.72, 11, 110, '#65e4ff', 190, -310)); bodies.push(body(420, H*.72, 8, 70, '#c8f36a', 135, -255));
+        $('experimentName').textContent = 'Free throw'; $('experimentCode').textContent = 'EXPERIMENT / 03'; $('lessonTitle').textContent = 'How does velocity change the path?'; $('lessonText').innerHTML = 'Horizontal velocity controls how far the ball travels; vertical gravity controls when it lands. Set gravity to <code>0.5×</code> and compare the curve with Earth’s.';
+      }
+      document.querySelectorAll('.preset').forEach(b => b.classList.toggle('active', b.dataset.preset === name));
+    }
+    loadPreset('orbit');
+
+    function distance(a,b) { return Math.hypot(b.x-a.x, b.y-a.y) || .01; }
+    function physics(dt) {
+      const G = 2.2 * params.gravity;
+      for (const a of bodies) { if (!a.fixed) { a.ax = 0; a.ay = 0; } }
+      if (params.gravity > 0) for (let i=0;i<bodies.length;i++) for (let j=i+1;j<bodies.length;j++) {
+        const a=bodies[i], b=bodies[j], dx=b.x-a.x, dy=b.y-a.y, d=Math.max(24, Math.hypot(dx,dy)), f=G*a.m*b.m/(d*d), fx=f*dx/d, fy=f*dy/d;
+        if (!a.fixed) { a.ax += fx/a.m; a.ay += fy/a.m; } if (!b.fixed) { b.ax -= fx/b.m; b.ay -= fy/b.m; }
+      }
+      for (const a of bodies) { if (!a.fixed) { a.vx += a.ax*dt; a.vy += a.ay*dt; a.x += a.vx*dt; a.y += a.vy*dt; } if (a.x<a.r) {a.x=a.r;a.vx=Math.abs(a.vx)*params.bounce;} if (a.x>W-a.r) {a.x=W-a.r;a.vx=-Math.abs(a.vx)*params.bounce;} if (a.y<a.r) {a.y=a.r;a.vy=Math.abs(a.vy)*params.bounce;} if (a.y>H-a.r) {a.y=H-a.r;a.vy=-Math.abs(a.vy)*params.bounce;} }
+      for (let i=0;i<bodies.length;i++) for (let j=i+1;j<bodies.length;j++) { const a=bodies[i], b=bodies[j], dx=b.x-a.x, dy=b.y-a.y, d=Math.hypot(dx,dy), min=a.r+b.r; if (d && d<min) { const nx=dx/d, ny=dy/d, overlap=min-d, invA=a.fixed?0:1/a.m, invB=b.fixed?0:1/b.m, sum=invA+invB; if (sum) { a.x-=nx*overlap*invA/sum; a.y-=ny*overlap*invA/sum; b.x+=nx*overlap*invB/sum; b.y+=ny*overlap*invB/sum; const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny; if (rv<0) { const impulse=-(1+params.bounce)*rv/sum; if (!a.fixed){a.vx-=impulse*nx*invA;a.vy-=impulse*ny*invA;} if(!b.fixed){b.vx+=impulse*nx*invB;b.vy+=impulse*ny*invB;} } } } }
+    }
+    function drawBackground() { ctx.fillStyle='#081522'; ctx.fillRect(0,0,W,H); ctx.strokeStyle='rgba(128,189,215,.075)'; ctx.lineWidth=1; const step=40; for(let x=step;x<W;x+=step){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();} for(let y=step;y<H;y+=step){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();} const g=ctx.createRadialGradient(W*.52,H*.48,20,W*.52,H*.48,Math.max(W,H)*.62);g.addColorStop(0,'rgba(48,110,124,.15)');g.addColorStop(1,'rgba(8,21,34,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H); }
+    function draw() { drawBackground(); if (preset==='orbit') { const c=center(); ctx.save(); ctx.setLineDash([4,8]); ctx.strokeStyle='rgba(101,228,255,.16)'; [150,205,245].forEach(r=>{ctx.beginPath();ctx.arc(c.x,c.y,r,0,Math.PI*2);ctx.stroke();});ctx.restore(); } for(const b of bodies){ if(params.trails&&!b.fixed){b.trail.push([b.x,b.y]);if(b.trail.length>38)b.trail.shift();ctx.beginPath();b.trail.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.strokeStyle=b.color+'45';ctx.lineWidth=1.5;ctx.stroke();} const glow=ctx.createRadialGradient(b.x,b.y,0,b.x,b.y,b.r*2.6);glow.addColorStop(0,b.color+'cc');glow.addColorStop(1,b.color+'00');ctx.fillStyle=glow;ctx.beginPath();ctx.arc(b.x,b.y,b.r*2.6,0,Math.PI*2);ctx.fill();ctx.fillStyle=b.color;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='rgba(255,255,255,.44)';ctx.beginPath();ctx.arc(b.x-b.r*.3,b.y-b.r*.3,Math.max(1.5,b.r*.22),0,Math.PI*2);ctx.fill(); }
+      if(spawn){const p=pointerPos(spawn.event), r=Math.min(30,Math.max(7,(performance.now()-spawn.time)/170));ctx.strokeStyle='rgba(200,243,106,.75)';ctx.setLineDash([4,4]);ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.strokeStyle='rgba(200,243,106,.5)';ctx.beginPath();ctx.moveTo(spawn.start.x,spawn.start.y);ctx.lineTo(p.x,p.y);ctx.stroke();}
+    }
+    function pointerPos(e){const r=canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
+    canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);spawn={start:pointerPos(e),event:e,time:performance.now()};});
+    canvas.addEventListener('pointermove',e=>{if(spawn)spawn.event=e;});
+    canvas.addEventListener('pointerup',e=>{if(!spawn)return;const end=pointerPos(e),s=spawn.start,held=Math.min(2600,performance.now()-spawn.time),r=Math.min(30,Math.max(7,held/170)),scale=.95; bodies.push(body(s.x,s.y,r,r*r*2,palette[bodies.length%palette.length],(s.x-end.x)*scale,(s.y-end.y)*scale));spawn=null;});
+    function updateStats(){ $('bodyCount').textContent=bodies.length; let energy=0;for(const b of bodies)energy+=.5*b.m*(b.vx*b.vx+b.vy*b.vy);$('energyValue').textContent=(energy/10000).toFixed(1);$('fpsValue').textContent=Math.round(fps); }
+    function tick(now){const elapsed=Math.min(34,now-last);last=now;fps= fps*.9 + (1000/Math.max(1,elapsed))*.1; physics(elapsed/1000*params.time); draw(); updateStats(); requestAnimationFrame(tick);} requestAnimationFrame(tick);
+    $('gravityRange').addEventListener('input',e=>{params.gravity=+e.target.value;$('gravityValue').textContent=params.gravity.toFixed(1)+'×';}); $('bounceRange').addEventListener('input',e=>{params.bounce=+e.target.value;$('bounceValue').textContent=params.bounce.toFixed(2);}); $('timeRange').addEventListener('input',e=>{params.time=+e.target.value;$('timeValue').textContent=params.time.toFixed(2)+'×';}); $('trailToggle').addEventListener('change',e=>params.trails=e.target.checked); document.querySelectorAll('.preset').forEach(b=>b.addEventListener('click',()=>loadPreset(b.dataset.preset))); $('resetBtn').addEventListener('click',()=>loadPreset(preset));
+  </script>
+</body>
+</html>
